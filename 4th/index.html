@@ -63,6 +63,13 @@ body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(
 @keyframes flash{0%{opacity:.85}100%{opacity:0}}
 .shake{animation:shake .45s}
 @keyframes shake{20%{transform:translate(-6px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-4px,-3px)}80%{transform:translate(4px,4px)}}
+.sf{position:fixed;z-index:5;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 8px rgba(255,190,40,.35))}
+.sf.burst{z-index:16}
+#ground{position:fixed;left:0;right:0;bottom:0;height:0;z-index:4;pointer-events:none;display:flex;justify-content:space-around;align-items:flex-end}
+#ground span{display:block;transform-origin:bottom center;transform:scale(0) translateY(20px);transition:transform 1.2s cubic-bezier(.2,1.4,.4,1);font-size:clamp(28px,7vw,46px);line-height:1}
+#ground.grow span{transform:scale(1) translateY(0)}
+#ground span:nth-child(odd){margin-bottom:-6px}
+@media (prefers-reduced-motion:reduce){.sf{display:none}}
 @media (prefers-reduced-motion:reduce){#envelope{animation:none}.seal{animation:none}}
 </style>
 </head>
@@ -104,7 +111,7 @@ const PHOTOS = [           // your pictures: first one is the BIG reveal, the ot
   "photos/5.jpg"
 ];
 const CAPTIONS = ["US","LVL 1","LVL 2","LVL 3","LVL 4"];   // small text under each photo
-const MESSAGE = "HAPPY 4TH MONTHSARY!\nMY LOVEYYY KOOOOO, I'D CHOOSE YOU IN EVERY LEVEL.\nI LOVE YOU SOO MUCHH ALWAYSS AND ALWAYSS AND FORERVERR AND EVERRR ♥";  // your message
+const MESSAGE = "HAPPY 4TH MONTHSARY!\nPLAYER 2, I'D CHOOSE YOU IN EVERY LEVEL.\nI LOVE YOU ♥";  // your message
 /* ================================================== */
 
 const $ = s => document.querySelector(s);
@@ -189,6 +196,7 @@ async function openEnvelope(){
   document.body.classList.add("shake");
   const r=env.getBoundingClientRect();
   spark(r.left+r.width/2,r.top+r.height/2,40);
+  sunBurst(r.left+r.width/2,r.top+r.height/2,24);
   env.classList.add("gone");
   beep(120,.3,"sawtooth",.09);
 
@@ -225,6 +233,41 @@ function reset(){
   env.classList.remove("open","gone");$("#hint").style.display="";$("#title").style.opacity=1;
   $("#flash").classList.remove("go");
 }
+
+/* ===== SUNFLOWERS ===== */
+const FLOWER="🌻";
+function drift(){
+  const s=document.createElement("span");s.className="sf";s.textContent=FLOWER;
+  const size=16+Math.random()*26, x=Math.random()*innerWidth, sway=(Math.random()*120-60);
+  s.style.cssText+=`left:${x}px;top:-50px;font-size:${size}px`;
+  document.body.appendChild(s);
+  const dur=7000+Math.random()*6000, rot=(Math.random()>.5?1:-1)*(180+Math.random()*360);
+  s.animate([
+    {transform:"translate(0,0) rotate(0)",opacity:0},
+    {opacity:.9,offset:.1},
+    {transform:`translate(${sway}px,${innerHeight+100}px) rotate(${rot}deg)`,opacity:.7}
+  ],{duration:dur,easing:"linear"}).onfinish=()=>s.remove();
+}
+function sunBurst(x,y,n=22){
+  for(let i=0;i<n;i++){
+    const s=document.createElement("span");s.className="sf burst";s.textContent=FLOWER;
+    s.style.cssText+=`left:${x}px;top:${y}px;font-size:${18+Math.random()*26}px`;
+    document.body.appendChild(s);
+    const a=Math.random()*Math.PI*2,d=90+Math.random()*Math.max(innerWidth,innerHeight)*.45;
+    s.animate([
+      {transform:"translate(-50%,-50%) scale(0) rotate(0)",opacity:1},
+      {transform:`translate(calc(-50% + ${Math.cos(a)*d}px),calc(-50% + ${Math.sin(a)*d}px)) scale(1.2) rotate(${Math.random()*360}deg)`,opacity:1,offset:.45},
+      {transform:`translate(calc(-50% + ${Math.cos(a)*d*1.1}px),calc(-50% + ${Math.sin(a)*d*1.1+120}px)) scale(.6) rotate(${Math.random()*540}deg)`,opacity:0}
+    ],{duration:1800+Math.random()*900,easing:"cubic-bezier(.2,.8,.3,1)"}).onfinish=()=>s.remove();
+  }
+}
+/* row of sunflowers that bloom at the bottom */
+const ground=document.createElement("div");ground.id="ground";
+for(let i=0;i<7;i++){const f=document.createElement("span");f.textContent=FLOWER;f.style.transitionDelay=(i*.12)+"s";ground.appendChild(f);}
+document.body.appendChild(ground);
+setTimeout(()=>ground.classList.add("grow"),400);
+/* gentle ambient fall */
+setInterval(()=>{if(!document.hidden)drift()},1100);
 
 env.addEventListener("click",openEnvelope);
 $("#replay").addEventListener("click",reset);
